@@ -1,5 +1,5 @@
-### SocketSerial ###
-- Example of a stream socket in internet domain with serial communication on server side
+# SocketSerial #
+** Example of a stream socket in internet domain with serial communication on server side **
 
 
 

@@ -1,13 +1,4 @@
-// Simple server in the internet domain using TCP 
-// http://www.linuxhowtos.org/C_C++/socket.htm
-// This example demonstrates a stream socket in internet domain (other sockets: datagram socket)
-// run with port number from 2000 to 65535
-// compile with gcc -o server server.c
-// run with ./server 51717
-// you can run this on a single machine, use keyword localhost as argument for client 
-// you can run server and connect to it with web browser with url localhost:51717 and 
-//  it prints out some werid text worthy of exploring 
-// if you get ERROR on binding: address already in use change the port number 
+/* Server */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,40 +30,61 @@ int main(int argc, char *argv[])
      char mybuffer[256];
      struct sockaddr_in serv_addr, cli_addr;
      int myn;
+
+     // Check arguments 
      if (argc < 2) {
          fprintf(stderr,"ERROR, no port provided\n");
          exit(1);
      }
+
+     // creates socket 
      sockfd = socket(AF_INET, SOCK_STREAM, 0);
      if (sockfd < 0) 
         error("ERROR opening socket");
+
+     // fills location of first argument with zeros of size 
      bzero((char *) &serv_addr, sizeof(serv_addr));
+
+     //retrieve portnumber from arguments 
      portno = atoi(argv[1]);
      serv_addr.sin_family = AF_INET;
      serv_addr.sin_addr.s_addr = INADDR_ANY;
      serv_addr.sin_port = htons(portno);
-     if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0) 
-              error("ERROR on binding");
+
+     // bind to socket 
+     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+        error("ERROR on binding");
+
+     // listen(file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET,
+     //        max length to which pending request queue may grow)
      listen(sockfd,5);
+
      clilen = sizeof(cli_addr);
-     newsockfd = accept(sockfd, 
-                 (struct sockaddr *) &cli_addr, 
-                 &clilen);
+
+     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
                  
      if (newsockfd < 0) 
           error("ERROR on accept");
+    
+     //clear buffer 
      bzero(mybuffer,256);
+
+     // read system call from file descriptor 
      myn = read(newsockfd,mybuffer,255);
      if (myn < 0) error("ERROR reading from socket");
+
+    
      printf("Here is the message: %s\n",mybuffer);
      myn = write(newsockfd,"I got your message",18);
      if (myn < 0) error("ERROR writing to socket");
      close(newsockfd);
      close(sockfd);
      
-     // from serial comm project 
-      printf("Serial programming tutorial\n");
+
+
+    /* Serial communication part */
+
+    printf("Opening serial port on /dev/ttyUSB0\n");
     
     // File Descriptor for the port
     int fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
@@ -87,9 +99,9 @@ int main(int argc, char *argv[])
     struct termios options;
     tcgetattr(fd, &options);
 
-    // modify options 
-    cfsetispeed( &options, B9600 ); // Baud rate
-    cfsetospeed( &options, B9600 );
+    // Setting serial communication parameters 
+    cfsetispeed( &options, B9600 ); // Set input baud rate
+    cfsetospeed( &options, B9600 ); // Set output baud rate 
     options.c_cflag |= ( CLOCAL | CREAD );
     options.c_cflag &= ~CSIZE; // Mask the character size bits 
     options.c_cflag |= CS8;    // Select 8 data bits character size 
@@ -108,7 +120,8 @@ int main(int argc, char *argv[])
     printf("sending to port\n");
     //write to the port
     int n;
-    n = write(fd, "1", 1);
+    
+    n = write(fd, "1234", 4);
 
     if (n < 0) {
         fputs("write() of 1 bytes failed!\n", stderr);
@@ -116,11 +129,11 @@ int main(int argc, char *argv[])
 
 	printf("message sent\n");
     // Read from port
-    //char buffer[10];
-    //int bytes;
-    //bytes = read(fd, &buffer, sizeof(buffer));
-    //printf("number of bytes read is %d\n", bytes);
-    //printf("%s\n", buffer);
+    char buffer[10];
+    int bytes;
+    bytes = read(fd, &buffer, sizeof(buffer));
+    printf("number of bytes read is %d\n", bytes);
+    printf("%s\n", buffer);
 
     
     close(fd);
