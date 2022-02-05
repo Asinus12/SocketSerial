@@ -121,10 +121,10 @@ int main(int argc, char *argv[])
     //write to the port
     int n;
     
-    n = write(fd, "1234", 4);
+    n = write(fd, mybuffer, sizeof(mybuffer));
 
     if (n < 0) {
-        fputs("write() of 1 bytes failed!\n", stderr);
+        fputs("write() failed!\n", stderr);
     }
 
 	printf("message sent\n");
