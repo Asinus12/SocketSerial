@@ -1,5 +1,4 @@
 /* Server */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,12 +6,24 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
-
-//from serial port example 
 #include <fcntl.h>   /* File control definitions */
 #include <errno.h>   /* Error number definitions */
 #include <termios.h> /* POSIX terminal control definitions */
 
+
+// sockfd and newsockfd are file descriptors, i.e. array subscripts into the file descriptor table.
+// Each running process has a file descriptor table which
+// contains pointers to all open i/o streams.  When a
+// process starts, three entries are created in the first
+// three cells of the table. stdin in cell one, stdout in cell two and stderr in cell 3 
+// Whenever a file or other i/o stream is opened, a new entry is created in this table,
+// usually in the first available empty slot.
+// The socket system call returns an entry into this
+// table; i.e.  a small integer.  This value is used for
+// other calls which use this socket.  The accept system
+// call returns another entry into this table.  The value
+// returned by accept is used for reading and writing to
+// that connection.
 
 
 
@@ -25,83 +36,70 @@ void error(const char *msg)
 int main(int argc, char *argv[])
 {
     
-     int sockfd, newsockfd, portno;
-     socklen_t clilen;
-     char mybuffer[256];
-     struct sockaddr_in serv_addr, cli_addr;
-     int myn;
+    // variables for internet socket  
+    int sockfd, newsockfd, portno;
+    socklen_t clilen;
+    char mybuffer[256];
+    struct sockaddr_in serv_addr, cli_addr;
+    int myn;
+    // variables for serial communication 
+    static char xbuffer[7] = "lala56";
+    int bytes, n;
 
-     // Check arguments 
-     if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         exit(1);
-     }
 
-     // creates socket 
-     sockfd = socket(AF_INET, SOCK_STREAM, 0);
-     if (sockfd < 0) 
-        error("ERROR opening socket");
+    /****************** TCP socket *********************/
+    // Check arguments 
+    if (argc < 2) {
+        fprintf(stderr,"ERROR, no port provided\n");
+        exit(1);
+    }
 
-     // fills location of first argument with zeros of size 
-     bzero((char *) &serv_addr, sizeof(serv_addr));
+    // creates socket 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+    error("ERROR opening socket");
 
-     //retrieve portnumber from arguments 
-     portno = atoi(argv[1]);
-     serv_addr.sin_family = AF_INET;
-     serv_addr.sin_addr.s_addr = INADDR_ANY;
-     serv_addr.sin_port = htons(portno);
+    // fills location of first argument with zeros of size 
+    bzero((char *) &serv_addr, sizeof(serv_addr));
 
-     // bind to socket 
-     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
-        error("ERROR on binding");
+    //retrieve portnumber from arguments 
+    portno = atoi(argv[1]);
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(portno);
 
-     // listen(file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET,
-     //        max length to which pending request queue may grow)
-     listen(sockfd,5);
+    // bind system call binds a socket to an address 
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
+    error("ERROR on binding");
 
-     clilen = sizeof(cli_addr);
+    // listen(file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET,
+    //        max length to which pending request queue may grow)
+    listen(sockfd,5);
 
-     newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
-                 
-     if (newsockfd < 0) 
-          error("ERROR on accept");
+    clilen = sizeof(cli_addr);
+
+    newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+                
+    if (newsockfd < 0) 
+        error("ERROR on accept");
     
 
+    // clear buffer for message 1 
+    bzero(mybuffer,256);
 
+    // read (system call) from file descriptor 
+    myn = read(newsockfd,mybuffer,255);
+    if (myn < 0) error("ERROR reading from socket");
 
-     //clear buffer 
-     bzero(mybuffer,256);
+    printf("SERVER: Received message: %s\n",mybuffer);
 
-     // read (system call) from file descriptor 
-     myn = read(newsockfd,mybuffer,255);
-     if (myn < 0) error("ERROR reading from socket");
+    close(newsockfd);
+    close(sockfd);
 
-     printf("Here is the message: %s\n",mybuffer);
-
-     myn = write(newsockfd,"I got your message, ",20);
-     if (myn < 0) error("ERROR writing to socket");
-
-     myn = write(newsockfd, mybuffer, sizeof(mybuffer) );
-     if (myn < 0) error("ERROR writing to socket");
-
-
-
-    
-
-
-
-
-
-     close(newsockfd);
-     
-     close(sockfd);
+    printf("Sockets closed! \n");
      
 
-
-    /* Serial communication part */
-
-    printf("Opening serial port on /dev/ttyUSB0\n");
-    
+    /****************** Serial communication socket *************************/
     // File Descriptor for the port
     int fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1){
@@ -115,7 +113,7 @@ int main(int argc, char *argv[])
     struct termios options;
     tcgetattr(fd, &options);
 
-    // Setting serial communication parameters 
+    // Serial communication parameters 
     cfsetispeed( &options, B9600 ); // Set input baud rate
     cfsetospeed( &options, B9600 ); // Set output baud rate 
     options.c_cflag |= ( CLOCAL | CREAD );
@@ -129,31 +127,31 @@ int main(int argc, char *argv[])
     options.c_iflag &= ~(IXON | IXOFF | IXANY); // Disable Software Flow control
     options.c_oflag &= ~OPOST; // RAW output
 
-    // Set attributes NOW ( other options are FLUSH and DRAIN)
+    // set attributes NOW ( other options are FLUSH and DRAIN)
     tcsetattr(fd, TCSANOW, &options);
 
+    // serial port opened 
+    printf("Opened serial port on /dev/ttyUSB0\n");
 
-    printf("sending to port\n");
-    //write to the port
-    int n;
-    
-    n = write(fd, mybuffer, sizeof(mybuffer));
 
+  
+
+    // write to the serial file descriptor
+    n = write(fd, xbuffer, sizeof(xbuffer));
+
+    // check if ok
     if (n < 0) {
         fputs("write() failed!\n", stderr);
     }
 
-	printf("message sent\n");
-    // Read from port
-    char buffer[10];
-    int bytes;
-    bytes = read(fd, &buffer, sizeof(buffer));
-    printf("number of bytes read is %d\n", bytes);
-    printf("%s\n", buffer);
-
+    // read from serial file descriptor 
+    bytes = read(fd, &xbuffer, sizeof(xbuffer));
     
+    printf("number of bytes read is %d\n", bytes );
+    printf("%s\n", xbuffer);
+
     close(fd);
-    // end of serial comm project 
+    printf("Closed serial port\n");
 
 
 
