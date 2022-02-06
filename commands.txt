@@ -1,0 +1,4 @@
+prva vrstica 
+druga vrstica 
+tretja vrstica
+cetrta vrstica
