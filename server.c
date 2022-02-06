@@ -66,18 +66,34 @@ int main(int argc, char *argv[])
      if (newsockfd < 0) 
           error("ERROR on accept");
     
+
+
+
      //clear buffer 
      bzero(mybuffer,256);
 
-     // read system call from file descriptor 
+     // read (system call) from file descriptor 
      myn = read(newsockfd,mybuffer,255);
      if (myn < 0) error("ERROR reading from socket");
 
-    
      printf("Here is the message: %s\n",mybuffer);
-     myn = write(newsockfd,"I got your message",18);
+
+     myn = write(newsockfd,"I got your message, ",20);
      if (myn < 0) error("ERROR writing to socket");
+
+     myn = write(newsockfd, mybuffer, sizeof(mybuffer) );
+     if (myn < 0) error("ERROR writing to socket");
+
+
+
+    
+
+
+
+
+
      close(newsockfd);
+     
      close(sockfd);
      
 
@@ -138,5 +154,10 @@ int main(int argc, char *argv[])
     
     close(fd);
     // end of serial comm project 
-     return 0; 
+
+
+
+
+    // return from main 
+    return 0; 
 }

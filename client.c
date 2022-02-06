@@ -1,5 +1,9 @@
 /* Client */
 
+
+
+#define __USE_MISC
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -8,6 +12,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
+
 
 void error(const char *msg)
 {
@@ -54,15 +59,18 @@ int main(int argc, char *argv[])
     serv_addr.sin_family = AF_INET;
 
     // copies n bytes from src to dest 
-    bcopy((char *)server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
-
+    // bcopy((char *)server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
+    bcopy((char *)server->h_addr_list[0], (char *) &serv_addr.sin_addr.s_addr, server->h_length);
     
     serv_addr.sin_port = htons(portno);
      
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
         error("ERROR connecting");
 
-    // User enters the message 
+
+
+
+    // User enters the message 1
     printf("Please enter the message: ");
 
     // erases buffer
@@ -90,6 +98,10 @@ int main(int argc, char *argv[])
     // i got your message 
     printf("%s\n",buffer);
 
+
+
+
+    
 
     close(sockfd);
     return 0;
