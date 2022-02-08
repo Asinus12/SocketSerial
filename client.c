@@ -2,8 +2,6 @@
 
 
 
-#define __USE_MISC
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,6 +11,13 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 
+
+typedef struct node{
+    char* cmd;
+    char* value; 
+    int delay; 
+    struct node* next;
+}node_t;
 
 void error(const char *msg)
 {
@@ -29,25 +34,42 @@ int main(int argc, char *argv[])
     struct hostent *server;
     char buffer[256];
 
-    // variables for reading commands.txt 
-    char *filename = "commands.txt";
-    FILE *fp = fopen(filename, "r");
+    // variable for parsing text file 
     const unsigned MAX_LENGTH = 256;
     char cmdbuffer[MAX_LENGTH];
+    node_t* head = malloc(sizeof(node_t));
+    node_t* hp = head; 
+    char* sdup; 
+    FILE *fp = fopen("commands.txt", "r");
 
-    /************ READ FROM commands.txt *****************/
-    if (fp == NULL)
-    {
-        printf("Error: could not open file %s", filename);
+    // try to open commands.txt
+    if (fp == NULL){
+        printf("Error: could not open text file");
         return 1;
     }
 
-    while (fgets(cmdbuffer, MAX_LENGTH, fp))
-        printf("%s", cmdbuffer);
+    // parse it and fill linked list 
+    while (fgets(cmdbuffer, MAX_LENGTH, fp)){
+        sdup = strdup(cmdbuffer);
+        hp->cmd = strtok(sdup, ":");
+        hp->value = strtok(0, ":");
+        hp->delay = atoi(strtok(0, ":"));
+        hp->next = malloc(sizeof(node_t));
+        hp = (node_t*) hp->next;
+    }
+    hp->next = NULL; 
+
+    hp = head; 
+    while(hp){
+        printf("Tokenized: %s %s %d\n", hp->cmd, hp->value, hp->delay);
+        free(hp);
+        hp = hp->next;
+    }
 
     fclose(fp);
 
     /******************************************************/
+
 
     // Checks if app is run with proper arguments 
     if (argc < 3) {
@@ -57,18 +79,12 @@ int main(int argc, char *argv[])
     // retrieves port number 
     portno = atoi(argv[2]);
 
-    // creates a socket (domain, type, protocol)
-    // DOMAIN:
-    //   AF_INET - IPv4 internet protocol 
-    //   AF_NETLINK - Kernel user interface device 
-    // TYPE: 
-    //   SOCK_STREAM - Sequenced reliable two way connection based byte stream 
-
+    // create a IPv4 socket 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         error("ERROR opening socket");
 
-    // retrieves server address (localhost) from arguments
+    // retrieves server address from CLI arguments
     server = gethostbyname(argv[1]);
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host\n");
@@ -81,7 +97,6 @@ int main(int argc, char *argv[])
     serv_addr.sin_family = AF_INET;
 
     // copies n bytes from src to dest 
-    // bcopy((char *)server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
     bcopy((char *)server->h_addr_list[0], (char *) &serv_addr.sin_addr.s_addr, server->h_length);
     
     serv_addr.sin_port = htons(portno);

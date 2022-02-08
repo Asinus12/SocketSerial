@@ -54,7 +54,8 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // creates socket 
+
+    // create a socket 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
     error("ERROR opening socket");
@@ -64,11 +65,13 @@ int main(int argc, char *argv[])
 
     //retrieve portnumber from arguments 
     portno = atoi(argv[1]);
+
+    //...
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(portno);
 
-    // bind system call binds a socket to an address 
+    // system call that binds a socket to an address 
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
     error("ERROR on binding");
 
@@ -148,7 +151,7 @@ int main(int argc, char *argv[])
     bytes = read(fd, &xbuffer, sizeof(xbuffer));
     
     printf("number of bytes read is %d\n", bytes );
-    printf("%s\n", xbuffer);
+    printf("SERVER: %s\n", xbuffer);
 
     close(fd);
     printf("Closed serial port\n");

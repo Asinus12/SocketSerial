@@ -1,4 +1,4 @@
-prva vrstica 
-druga vrstica 
-tretja vrstica
-cetrta vrstica
+write:0x01:1
+read:0x02:2 
+set:0x03:3
+reset:0x04:4
