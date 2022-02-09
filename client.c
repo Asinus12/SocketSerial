@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
     node_t* hp = head; 
     char* sdup; 
     FILE *fp = fopen("commands.txt", "r");
+    int cmd_count = 0; 
 
     // try to open commands.txt
     if (fp == NULL){
@@ -59,12 +60,7 @@ int main(int argc, char *argv[])
     }
     hp->next = NULL; 
 
-    hp = head; 
-    while(hp){
-        printf("Tokenized: %s %s %d\n", hp->cmd, hp->value, hp->delay);
-        free(hp);
-        hp = hp->next;
-    }
+
 
     fclose(fp);
 
@@ -108,19 +104,55 @@ int main(int argc, char *argv[])
     /**************** CONNECTION ESTABLISHED ****************************/ 
 
 
-    // User enters the message 1
-    printf("CLIENT: Please enter the message: ");
+    hp = head; 
+    while(hp){
+        printf("Tokenized: %s %s %d\n", hp->cmd, hp->value, hp->delay);
+        //free(hp);
+        hp = hp->next;
+        cmd_count++;
+    }
+    // from 6 to 5
+    cmd_count = cmd_count-1;
 
-    // erases buffer
+
+
+    // Send number of commands to be transfered
+    printf("Commands to be sent: %d\n", cmd_count);
     bzero(buffer,256);
-
-    // fill buffer with standard input 
-    fgets(buffer,255,stdin);
-
-    // write() ... writes to file descriptor
+    sprintf(buffer,"%d", cmd_count);
+    // send server number of commands 
     n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
          error("ERROR writing to socket");
+
+    hp = head; 
+
+
+    // start sending commands 
+    while(cmd_count--){
+       
+        // erases buffer
+        bzero(buffer,256);
+
+        // fill buffer with standard input 
+        // fgets(buffer,255,stdin);
+        //strcpy(buffer, "lalal");
+        strcpy(buffer, hp->cmd);
+        hp = hp->next;
+        //free(hp)
+        printf("Sending cmd ..%s\n", buffer);
+
+        // write to pipe
+        n = write(sockfd,buffer,strlen(buffer));
+        if (n < 0) 
+            error("ERROR writing to socket");
+
+        sleep(1);
+
+    }
+   
+
+ 
 
     close(sockfd);
     return 0;

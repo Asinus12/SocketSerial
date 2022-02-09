@@ -54,7 +54,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-
     // create a socket 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
@@ -87,19 +86,46 @@ int main(int argc, char *argv[])
         error("ERROR on accept");
     
 
-    // clear buffer for message 1 
+
+
+    // receiving command count message 
     bzero(mybuffer,256);
 
-    // read (system call) from file descriptor 
     myn = read(newsockfd,mybuffer,255);
     if (myn < 0) error("ERROR reading from socket");
 
-    printf("SERVER: Received message: %s\n",mybuffer);
+    printf("SERVER: Receivng %s commands ..\n",mybuffer);
+    unsigned short cmd_count = atoi(mybuffer);
+
+
+
+        // while loop for parsing 
+
+    while(cmd_count--){
+        printf("receiiving\n");
+        bzero(mybuffer,256);
+
+        // read (system call) from file descriptor 
+        myn = read(newsockfd,mybuffer,255);
+        if (myn < 0) error("ERROR reading from socket");
+
+        printf("SERVER: Received message: %s\n",mybuffer);
+    }
+
+
+
+
+
+
+
 
     close(newsockfd);
     close(sockfd);
 
     printf("Sockets closed! \n");
+
+
+
      
 
     /****************** Serial communication socket *************************/
