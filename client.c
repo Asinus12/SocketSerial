@@ -28,13 +28,13 @@ void error(const char *msg)
 int main(int argc, char *argv[])
 {
 
-    // variables for internet socket 
+    // IPv4 socket  
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
     char buffer[256];
 
-    // variable for parsing text file 
+    // commands.txt parsing 
     const unsigned MAX_LENGTH = 256;
     char cmdbuffer[MAX_LENGTH];
     node_t* head = malloc(sizeof(node_t));
@@ -61,13 +61,12 @@ int main(int argc, char *argv[])
     hp->next = NULL; 
 
 
-
+    // close file 
     fclose(fp);
 
-    /******************************************************/
 
 
-    // Checks if app is run with proper arguments 
+    // Checks CLI arguments
     if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
        exit(0);
@@ -101,7 +100,7 @@ int main(int argc, char *argv[])
         error("ERROR connecting");
 
 
-    /**************** CONNECTION ESTABLISHED ****************************/ 
+    /**************** IPv4 CONNECTION ESTABLISHED ****************************/ 
 
 
     hp = head; 
@@ -120,13 +119,18 @@ int main(int argc, char *argv[])
     printf("Commands to be sent: %d\n", cmd_count);
     bzero(buffer,256);
     sprintf(buffer,"%d", cmd_count);
+
     // send server number of commands 
     n = write(sockfd,buffer,strlen(buffer));
     if (n < 0) 
          error("ERROR writing to socket");
 
+
+    // reset head pointer 
     hp = head; 
 
+    // a bit of delay 
+    sleep(1);
 
     // start sending commands 
     while(cmd_count--){
@@ -134,12 +138,10 @@ int main(int argc, char *argv[])
         // erases buffer
         bzero(buffer,256);
 
-        // fill buffer with standard input 
-        // fgets(buffer,255,stdin);
-        //strcpy(buffer, "lalal");
-        strcpy(buffer, hp->cmd);
+        // fill buffer 
+        strcpy(buffer, hp->cmd); 
         hp = hp->next;
-        //free(hp)
+        //free(hp);
         printf("Sending cmd ..%s\n", buffer);
 
         // write to pipe

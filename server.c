@@ -42,40 +42,35 @@ int main(int argc, char *argv[])
     char mybuffer[256];
     struct sockaddr_in serv_addr, cli_addr;
     int myn;
-    // variables for serial communication 
-    static char xbuffer[7] = "lala56";
-    int bytes, n;
 
 
-    /****************** TCP socket *********************/
-    // Check arguments 
+
+    // Check CLI arguments 
     if (argc < 2) {
         fprintf(stderr,"ERROR, no port provided\n");
         exit(1);
     }
 
-    // create a socket 
+    // create a IPv4 socket 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
     error("ERROR opening socket");
 
-    // fills location of first argument with zeros of size 
     bzero((char *) &serv_addr, sizeof(serv_addr));
 
-    //retrieve portnumber from arguments 
+    // retrieve portnumber from arguments 
     portno = atoi(argv[1]);
 
-    //...
+    // set parameters for IPv4 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
     serv_addr.sin_port = htons(portno);
 
-    // system call that binds a socket to an address 
+    // bind a socket to an address 
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
-    error("ERROR on binding");
+        error("ERROR on binding");
 
-    // listen(file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET,
-    //        max length to which pending request queue may grow)
+    // listen an accept an IPv4 socket
     listen(sockfd,5);
 
     clilen = sizeof(cli_addr);
@@ -86,49 +81,37 @@ int main(int argc, char *argv[])
         error("ERROR on accept");
     
 
-
-
-    // receiving command count message 
+    /*** IPv4 connection established ***/
+    //  receive num of commands
     bzero(mybuffer,256);
 
     myn = read(newsockfd,mybuffer,255);
     if (myn < 0) error("ERROR reading from socket");
 
     printf("SERVER: Receivng %s commands ..\n",mybuffer);
-    unsigned short cmd_count = atoi(mybuffer);
+    const unsigned short cmd_count = atoi(mybuffer);
+    unsigned short cmdc = cmd_count;
 
+    // char array for commands
+    char cmd_array[cmdc][20];
 
-
-        // while loop for parsing 
-
-    while(cmd_count--){
-        printf("receiiving\n");
+    // while loop for parsing text file 
+    while(cmdc--){
         bzero(mybuffer,256);
-
-        // read (system call) from file descriptor 
         myn = read(newsockfd,mybuffer,255);
-        if (myn < 0) error("ERROR reading from socket");
+        if (myn < 0)
+            error("ERROR reading from socket");
+            strcpy(cmd_array[cmd_count], mybuffer);
+            printf("SERVER: Received message: %s\n",cmd_array[cmd_count]);
 
-        printf("SERVER: Received message: %s\n",mybuffer);
     }
-
-
-
-
-
-
 
 
     close(newsockfd);
     close(sockfd);
-
-    printf("Sockets closed! \n");
-
+    printf("Commands parsed, opening serial port on /dev/ttyUSB0\n");
 
 
-     
-
-    /****************** Serial communication socket *************************/
     // File Descriptor for the port
     int fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1){
@@ -159,25 +142,43 @@ int main(int argc, char *argv[])
     // set attributes NOW ( other options are FLUSH and DRAIN)
     tcsetattr(fd, TCSANOW, &options);
 
-    // serial port opened 
-    printf("Opened serial port on /dev/ttyUSB0\n");
 
 
-  
+    // variables for serial communication 
+    static char xbuffer[7] = "lala56";
+    int bytes, n;
 
-    // write to the serial file descriptor
-    n = write(fd, xbuffer, sizeof(xbuffer));
 
-    // check if ok
-    if (n < 0) {
-        fputs("write() failed!\n", stderr);
-    }
-
-    // read from serial file descriptor 
-    bytes = read(fd, &xbuffer, sizeof(xbuffer));
+    cmdc = cmd_count; 
+    while (cmdc--)
+    {
+        // WRITE PART, write to the serial file descriptor
+        n = write(fd, xbuffer, sizeof(xbuffer));
+        sleep(1);
     
-    printf("number of bytes read is %d\n", bytes );
-    printf("SERVER: %s\n", xbuffer);
+        // check if ok
+        if (n < 0) {
+            fputs("write() failed!\n", stderr);
+        }
+
+
+        //READ PART, read from serial file descriptor 
+        bytes = read(fd, &xbuffer, sizeof(xbuffer));
+        
+        printf("number of bytes read is %d\n", bytes );
+        printf("SERVER: %s\n", xbuffer);
+    }
+    
+
+
+
+
+ 
+
+
+
+
+
 
     close(fd);
     printf("Closed serial port\n");
