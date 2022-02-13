@@ -9,6 +9,7 @@
 #include <fcntl.h>   /* File control definitions */
 #include <errno.h>   /* Error number definitions */
 #include <termios.h> /* POSIX terminal control definitions */
+#include <sys/klog.h> /* Read/clear kernel messages */
 
 
 
@@ -21,6 +22,17 @@ void error(const char *msg)
 int main(int argc, char *argv[])
 {
     
+
+
+    char kernel_buffer[100];
+    // wrapper funciton of kernel funciton printk 
+    // 2 - waits for new kernel messages, requires root privileges 
+    // 3 - reads old kernel messages, does not require root privileges
+    printf("Printing kernel message\n");
+    klogctl(3,kernel_buffer, sizeof(kernel_buffer));
+    printf("%s\n", kernel_buffer);
+
+
     // variables for internet socket  
     int sockfd, newsockfd, portno;
     socklen_t clilen;

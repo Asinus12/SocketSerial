@@ -127,8 +127,7 @@ int main(int argc, char *argv[])
 
         // fill buffer 
         strcpy(buffer, hp->cmd); 
-        // free(hp);
-        hp = hp->next;
+
        
         printf("Sending cmd ..%s\n", buffer);
 
@@ -138,6 +137,9 @@ int main(int argc, char *argv[])
             error("ERROR writing to socket");
 
         sleep(1);
+
+        // free(hp);
+        hp = hp->next;
     
     }
 
