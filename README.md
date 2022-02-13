@@ -20,9 +20,35 @@ User can then sends commands (manually or from a file) to the server on the same
 
 
 ## Errors and Other ##
+- CAUTION: commands.txt MUST NOT HAVE ANY EMPTY LINES, GIVES SEGFAULT!!
 - runable with port numbers from 2000 to 65535
 - server_multi can serve multiple slaves, otherwise there is no difference from server 
 - if you get ERROR on binding: address already in use change the port number 
 - you can run server and connect to it with web browser with url localhost:51717 
 - You have to have USB-RS232 usb plugged in (with RX and TX connected) for program to fully work 
+- lsof -i TCP:51717 ... shows open files
+- valgring -v ./client ... dor debugging seg faults
+- debug with 
+            $ cc -g client.c
+            $ gdb a.out
+            $ gdb --args a.out arg1 arg2 arg3 .. run with CLI arguments
+            $ layout next .. rotates perspectives
+            $ set print elements 0 ... if gdb is truncating printf 
+
+            $ b main ... sets breakpoint at main
+            $ b 73 ... sets breakpoint at line 73
+            $ run
+            $ continue
+            $ next .. dont dive 
+            $ step .. dive into 
+            $ finish ... continue until current fucntion returns 
+
+
+            $ info line * 0x08000000 ... disassembly of qpfn_vectors
+            $ info mem 
+            $ info threads
+            $ display, undisplay <num>, enable/disable display <num>
+            $ i r ... show all registers r0-r15
+            $ backtrace full
+            $ kill run
 -  http://www.linuxhowtos.org/C_C++/socket.htm

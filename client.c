@@ -1,7 +1,4 @@
-/* Client */
-
-
-
+/* Client side */
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,16 +22,54 @@ void error(const char *msg)
     exit(0);
 }
 
+
+
 int main(int argc, char *argv[])
 {
-
-    // IPv4 socket  
+    /******************* ESTABLISH IPV4 SOCKET CONNECTION **********************/
     int sockfd, portno, n;
     struct sockaddr_in serv_addr;
     struct hostent *server;
-    char buffer[256];
 
-    // commands.txt parsing 
+    // check CLI arguments
+    if (argc < 3) {
+       fprintf(stderr,"usage %s hostname port\n", argv[0]);
+       exit(0);
+    }
+    // retrieve port number 
+    portno = atoi(argv[2]);
+
+    // create a IPv4 socket 
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+        error("ERROR opening socket");
+
+    // retrieve server ip 
+    server = gethostbyname(argv[1]);
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host\n");
+        exit(0);
+    }
+
+    // manage server address 
+    bzero((char *) &serv_addr, sizeof(serv_addr));
+
+    serv_addr.sin_family = AF_INET;
+
+    bcopy((char *)server->h_addr_list[0], (char *) &serv_addr.sin_addr.s_addr, server->h_length);
+    
+    serv_addr.sin_port = htons(portno);
+     
+    // connect to socket 
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
+        error("ERROR connecting");
+    else 
+        printf("Connected to server\n");
+
+
+
+    /**************** PARSE TEXT FILE  ****************************/ 
+
     const unsigned MAX_LENGTH = 256;
     char cmdbuffer[MAX_LENGTH];
     node_t* head = malloc(sizeof(node_t));
@@ -42,6 +77,8 @@ int main(int argc, char *argv[])
     char* sdup; 
     FILE *fp = fopen("commands.txt", "r");
     int cmd_count = 0; 
+    char buffer[256];
+
 
     // try to open commands.txt
     if (fp == NULL){
@@ -50,73 +87,25 @@ int main(int argc, char *argv[])
     }
 
     // parse it and fill linked list 
+    printf("Parsed text file: \n");
     while (fgets(cmdbuffer, MAX_LENGTH, fp)){
         sdup = strdup(cmdbuffer);
         hp->cmd = strtok(sdup, ":");
         hp->value = strtok(0, ":");
         hp->delay = atoi(strtok(0, ":"));
         hp->next = malloc(sizeof(node_t));
+        printf("%s %s %d\n", hp->cmd, hp->value, hp->delay);
         hp = (node_t*) hp->next;
+        cmd_count++;
     }
-    hp->next = NULL; 
-
-
-    // close file 
+    hp->next = NULL;
     fclose(fp);
 
 
 
-    // Checks CLI arguments
-    if (argc < 3) {
-       fprintf(stderr,"usage %s hostname port\n", argv[0]);
-       exit(0);
-    }
-    // retrieves port number 
-    portno = atoi(argv[2]);
+    // // Send number of commands to be transfered
+    printf("\n%d commands will be sent .. \n", cmd_count);
 
-    // create a IPv4 socket 
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) 
-        error("ERROR opening socket");
-
-    // retrieves server address from CLI arguments
-    server = gethostbyname(argv[1]);
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-
-    // erases the n bytes of memory starting at memory location of first argument
-    bzero((char *) &serv_addr, sizeof(serv_addr));
-
-    serv_addr.sin_family = AF_INET;
-
-    // copies n bytes from src to dest 
-    bcopy((char *)server->h_addr_list[0], (char *) &serv_addr.sin_addr.s_addr, server->h_length);
-    
-    serv_addr.sin_port = htons(portno);
-     
-    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) 
-        error("ERROR connecting");
-
-
-    /**************** IPv4 CONNECTION ESTABLISHED ****************************/ 
-
-
-    hp = head; 
-    while(hp){
-        printf("Tokenized: %s %s %d\n", hp->cmd, hp->value, hp->delay);
-        //free(hp);
-        hp = hp->next;
-        cmd_count++;
-    }
-    // from 6 to 5
-    cmd_count = cmd_count-1;
-
-
-
-    // Send number of commands to be transfered
-    printf("Commands to be sent: %d\n", cmd_count);
     bzero(buffer,256);
     sprintf(buffer,"%d", cmd_count);
 
@@ -125,14 +114,12 @@ int main(int argc, char *argv[])
     if (n < 0) 
          error("ERROR writing to socket");
 
-
-    // reset head pointer 
-    hp = head; 
-
     // a bit of delay 
     sleep(1);
 
-    // start sending commands 
+
+    // start sending commands over serial comm. socket 
+    hp = head; 
     while(cmd_count--){
        
         // erases buffer
@@ -140,8 +127,9 @@ int main(int argc, char *argv[])
 
         // fill buffer 
         strcpy(buffer, hp->cmd); 
+        // free(hp);
         hp = hp->next;
-        //free(hp);
+       
         printf("Sending cmd ..%s\n", buffer);
 
         // write to pipe
@@ -150,12 +138,19 @@ int main(int argc, char *argv[])
             error("ERROR writing to socket");
 
         sleep(1);
-
+    
     }
-   
 
- 
+    // free alocated memory 
+    hp = head;
+    while(hp){
+        free(hp);
+        hp=hp->next;
+    }
 
     close(sockfd);
+
+
+    // end of main 
     return 0;
 }

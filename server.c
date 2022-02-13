@@ -11,21 +11,6 @@
 #include <termios.h> /* POSIX terminal control definitions */
 
 
-// sockfd and newsockfd are file descriptors, i.e. array subscripts into the file descriptor table.
-// Each running process has a file descriptor table which
-// contains pointers to all open i/o streams.  When a
-// process starts, three entries are created in the first
-// three cells of the table. stdin in cell one, stdout in cell two and stderr in cell 3 
-// Whenever a file or other i/o stream is opened, a new entry is created in this table,
-// usually in the first available empty slot.
-// The socket system call returns an entry into this
-// table; i.e.  a small integer.  This value is used for
-// other calls which use this socket.  The accept system
-// call returns another entry into this table.  The value
-// returned by accept is used for reading and writing to
-// that connection.
-
-
 
 void error(const char *msg)
 {
@@ -39,11 +24,8 @@ int main(int argc, char *argv[])
     // variables for internet socket  
     int sockfd, newsockfd, portno;
     socklen_t clilen;
-    char mybuffer[256];
     struct sockaddr_in serv_addr, cli_addr;
     int myn;
-
-
 
     // Check CLI arguments 
     if (argc < 2) {
@@ -70,6 +52,9 @@ int main(int argc, char *argv[])
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
         error("ERROR on binding");
 
+
+    printf("Waiting for clients .. \n");
+
     // listen an accept an IPv4 socket
     listen(sockfd,5);
 
@@ -81,39 +66,43 @@ int main(int argc, char *argv[])
         error("ERROR on accept");
     
 
-    /*** IPv4 connection established ***/
+    /******************* IPv4 socket connection established *************************/
+
+
+    char mybuffer[256];
+    
     //  receive num of commands
     bzero(mybuffer,256);
 
     myn = read(newsockfd,mybuffer,255);
     if (myn < 0) error("ERROR reading from socket");
 
-    printf("SERVER: Receivng %s commands ..\n",mybuffer);
+    printf("%s commands will be received ..\n",mybuffer);
+
     const unsigned short cmd_count = atoi(mybuffer);
     unsigned short cmdc = cmd_count;
-
-    // char array for commands
     char cmd_array[cmdc][20];
 
-    // while loop for parsing text file 
     while(cmdc--){
         bzero(mybuffer,256);
         myn = read(newsockfd,mybuffer,255);
         if (myn < 0)
             error("ERROR reading from socket");
-            strcpy(cmd_array[cmd_count], mybuffer);
-            printf("SERVER: Received message: %s\n",cmd_array[cmd_count]);
+            strcpy(cmd_array[cmdc], mybuffer);
+            printf("Cmd %d: %s\n",cmdc, cmd_array[cmdc]);
 
     }
-
-
     close(newsockfd);
     close(sockfd);
-    printf("Commands parsed, opening serial port on /dev/ttyUSB0\n");
 
+
+     /************************* Serial connection  *********************************/
+
+    char usbport[] = "/dev/ttyUSB1";
+    printf("Opening serial port on %s\n", usbport);
 
     // File Descriptor for the port
-    int fd = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY | O_NDELAY);
+    int fd = open(usbport, O_RDWR | O_NOCTTY | O_NDELAY);
     if (fd == -1){
         perror("Unable to open /dev/ttyUSB0");
     }
@@ -143,43 +132,33 @@ int main(int argc, char *argv[])
     tcsetattr(fd, TCSANOW, &options);
 
 
+    /************************* Serial connection established  *********************************/
+
 
     // variables for serial communication 
-    static char xbuffer[7] = "lala56";
+    char rxbuffer[256];
     int bytes, n;
-
-
+    
     cmdc = cmd_count; 
     while (cmdc--)
     {
         // WRITE PART, write to the serial file descriptor
-        n = write(fd, xbuffer, sizeof(xbuffer));
-        sleep(1);
-    
-        // check if ok
+        printf("TX: %s \n", cmd_array[cmdc]);
+        n = write(fd, cmd_array[cmdc], 7);
         if (n < 0) {
             fputs("write() failed!\n", stderr);
         }
 
-
-        //READ PART, read from serial file descriptor 
-        bytes = read(fd, &xbuffer, sizeof(xbuffer));
+        usleep(500000);
         
-        printf("number of bytes read is %d\n", bytes );
-        printf("SERVER: %s\n", xbuffer);
+        //READ PART, read from serial file descriptor 
+        bytes = read(fd, rxbuffer, sizeof(rxbuffer));
+        printf("RX:  %s", rxbuffer);
+        printf("\n");
+
+        usleep(500000);
     }
     
-
-
-
-
- 
-
-
-
-
-
-
     close(fd);
     printf("Closed serial port\n");
 
