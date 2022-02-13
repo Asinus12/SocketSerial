@@ -12,7 +12,7 @@
 typedef struct node{
     char* cmd;
     char* value; 
-    int delay; 
+    char* delay; 
     struct node* next;
 }node_t;
 
@@ -88,13 +88,14 @@ int main(int argc, char *argv[])
 
     // parse it and fill linked list 
     printf("Parsed text file: \n");
+    usleep(500000);
     while (fgets(cmdbuffer, MAX_LENGTH, fp)){
         sdup = strdup(cmdbuffer);
         hp->cmd = strtok(sdup, ":");
         hp->value = strtok(0, ":");
-        hp->delay = atoi(strtok(0, ":"));
+        hp->delay = strtok(0, ":");
         hp->next = malloc(sizeof(node_t));
-        printf("%s %s %d\n", hp->cmd, hp->value, hp->delay);
+        printf("%s %s %s", hp->cmd, hp->value, hp->delay);
         hp = (node_t*) hp->next;
         cmd_count++;
     }
@@ -103,7 +104,8 @@ int main(int argc, char *argv[])
 
 
 
-    // // Send number of commands to be transfered
+    // Send number of commands to be transfered
+    printf("\n");
     printf("\n%d commands will be sent .. \n", cmd_count);
 
     bzero(buffer,256);
@@ -122,27 +124,36 @@ int main(int argc, char *argv[])
     hp = head; 
     while(cmd_count--){
        
-        // erases buffer
+        printf("Sending .. %s %s %s", hp->cmd, hp->value, hp->delay);
+
+        // send command
         bzero(buffer,256);
-
-        // fill buffer 
         strcpy(buffer, hp->cmd); 
-
-       
-        printf("Sending cmd ..%s\n", buffer);
-
-        // write to pipe
         n = write(sockfd,buffer,strlen(buffer));
         if (n < 0) 
             error("ERROR writing to socket");
 
-        sleep(1);
+        // send command value 
+        usleep(100000);
+        bzero(buffer,256);
+        strcpy(buffer, hp->value); 
+        n = write(sockfd,buffer,strlen(buffer));
+        if (n < 0) 
+            error("ERROR writing to socket");
 
-        // free(hp);
+        // send command delay 
+        usleep(100000);
+        bzero(buffer,256);
+        strcpy(buffer, hp->delay); 
+        n = write(sockfd,buffer,strlen(buffer));
+        if (n < 0) 
+            error("ERROR writing to socket");
+
+        usleep(500000);
         hp = hp->next;
-    
     }
 
+    printf("\n");
     // free alocated memory 
     hp = head;
     while(hp){

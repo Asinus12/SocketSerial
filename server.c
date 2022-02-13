@@ -94,23 +94,46 @@ int main(int argc, char *argv[])
     const unsigned short cmd_count = atoi(mybuffer);
     unsigned short cmdc = cmd_count;
     char cmd_array[cmdc][20];
+    char cmdval_array[cmdc][20];
+    char cmddly_array[cmdc][20];
 
     while(cmdc--){
+
+        // receive command 
         bzero(mybuffer,256);
         myn = read(newsockfd,mybuffer,255);
         if (myn < 0)
             error("ERROR reading from socket");
             strcpy(cmd_array[cmdc], mybuffer);
-            printf("Cmd %d: %s\n",cmdc, cmd_array[cmdc]);
+            printf("Cmd %d: %s ",cmdc, cmd_array[cmdc]);
+
+        // receive command value 
+        bzero(mybuffer,256);
+        myn = read(newsockfd,mybuffer,255);
+        if (myn < 0)
+            error("ERROR reading from socket");
+            strcpy(cmdval_array[cmdc], mybuffer);
+            printf("%s ",cmdval_array[cmdc]);
+
+
+        // receive command delay 
+        bzero(mybuffer,256);
+        myn = read(newsockfd,mybuffer,255);
+        if (myn < 0)
+            error("ERROR reading from socket");
+            strcpy(cmddly_array[cmdc], mybuffer);
+            printf("%s",cmddly_array[cmdc]);
 
     }
+    printf("\n");
     close(newsockfd);
     close(sockfd);
 
 
-     /************************* Serial connection  *********************************/
+     /****************** Establishing serial connection  *********************************/
 
     char usbport[] = "/dev/ttyUSB1";
+    printf("\n");
     printf("Opening serial port on %s\n", usbport);
 
     // File Descriptor for the port
@@ -161,14 +184,15 @@ int main(int argc, char *argv[])
             fputs("write() failed!\n", stderr);
         }
 
-        usleep(500000);
+        usleep(atoi(cmddly_array[cmdc])*1000);
         
         //READ PART, read from serial file descriptor 
         bytes = read(fd, rxbuffer, sizeof(rxbuffer));
         printf("RX:  %s", rxbuffer);
         printf("\n");
 
-        usleep(500000);
+        usleep(atoi(cmddly_array[cmdc])*1000);
+
     }
     
     close(fd);
