@@ -210,15 +210,33 @@ int main(int argc, char *argv[])
         if (n < 0) {
             fputs("write() failed!\n", stderr);
         }
-
         usleep(atoi(cmddly_array[cmdc])*1000);
         
         //READ PART, read from serial file descriptor 
         bytes = read(fd, rxbuffer, sizeof(rxbuffer));
         printf("RX:  %s", rxbuffer);
         printf("\n");
-
         usleep(atoi(cmddly_array[cmdc])*1000);
+
+
+        // WRITE PART, write to the serial file descriptor
+        printf("TX: %s \n", cmdval_array[cmdc]);
+        n = write(fd, cmdval_array[cmdc], 7);
+        if (n < 0) {
+            fputs("write() failed!\n", stderr);
+        }
+        usleep(atoi(cmddly_array[cmdc])*1000);
+        
+        //READ PART, read from serial file descriptor 
+        bytes = read(fd, rxbuffer, sizeof(rxbuffer));
+        printf("RX:  %s", rxbuffer);
+        printf("\n");
+        usleep(atoi(cmddly_array[cmdc])*1000);
+
+
+
+
+
 
     }
     

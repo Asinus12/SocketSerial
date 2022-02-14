@@ -1,42 +1,45 @@
 # SocketSerial #
 
-**Application for sending serial commands via internet socket**
-Client sends commands to the server.
-Server receives commands and sends them to serial communicaton port.
+**Terminal app for sending arbitrary commands over local network** 
+I have no space on my desk! 
+Server side of the application is (intended to be) running on a Raspberry pi with access to internet
+and connected to microcontrolles via RS232 (dongle).
 
-The goal is to have a server app runing on a local machine that is connected to embedded devices over RS232 USB dongle.
-User can then sends commands (manually or from a file) to the server on the same subnet.
+Client side can be run on any PC in the same subnet. (Windows machine needs testing)
+You can send commands manually or put them into a text file named commands.txt with the following format:
 
+    string:string:integer
 
-## Server ##
-- compile with gcc -o server server.c
-- run with ./server 51717
+No empty lines or characthers!!!
 
+## Compilation ## 
 
-## Client ## 
-- Compile with gcc -o client client.c 
-- run with ./client localhost 51717 (if running on a single machine )
-- run with ./clinet server_ip_address 51717 (if running on different machine on the same subnet)
+- Server: clear && gcc -o server server.c && sudo ./server 3000 /dev/ttyUSB0
+- Client: clear && gcc -o client client.c && ./client localhost 3000
+
+Argument localhost is used if running both sides on the same machine, otherwise IP address of the server
+Port numbers can be anything between 1 and 65535 (well known ports)
+
 
 
 ## Errors and Other ##
-- CAUTION: commands.txt file must not have any empty lines, gives seg error
-- You may have to run the program with root privileges (klogctl)
-- Runable with port numbers from 2000 to 65535
-- server_multi can serve multiple slaves, otherwise there is no difference from server 
+- For testing the app on a single machine you have to have USB-RS232 usb plugged in (with RX and TX connected)
+- You must run the server side with root privileges (klogctl)
+- server_multi can serve multiple slaves, otherwise there is no difference from server (todo)
 - If you get ERROR on binding: address already in use change the port number 
-- you can run server and connect to it with web browser with url localhost:51717 
-- You have to have USB-RS232 usb plugged in (with RX and TX connected) for program to fully work 
+
 ### Debugging ###
-- lsof -i TCP:51717 ... shows open files
+- lsof -i TCP:3000 ... shows open files
 - valgrind -v ./client ... for debugging segmentation faults
-- debug with 
+- GDB "cheat sheat"  
 
             $ cc -g client.c
             $ gdb a.out
             $ gdb --args a.out arg1 arg2 arg3 .. run with CLI arguments
+
             $ layout next .. rotates perspectives
             $ set print elements 0 ... if gdb is truncating printf 
+
             $ b main ... sets breakpoint at main
             $ b 73 ... sets breakpoint at line 73
             $ run
@@ -44,11 +47,11 @@ User can then sends commands (manually or from a file) to the server on the same
             $ next .. dont dive 
             $ step .. dive into 
             $ finish ... continue until current fucntion returns 
-            $ info line * 0x08000000 ... disassembly of qpfn_vectors
+            $ info line * 0x08000000 ... disassembly of memory location
             $ info mem 
             $ info threads
-            $ display, undisplay <num>, enable/disable display <num>
-            $ i r ... show all registers r0-r15
+            $ display, undisplay <num>
+            $ i r ... shows general purpose registers with CSPR 
             $ backtrace full
             $ kill run
 
