@@ -23,14 +23,41 @@ int main(int argc, char *argv[])
 {
     
 
+    // USB from CLI
+    char* usbport = (char*) argv[2];
+    printf("Connecting to: %s\n", usbport);
 
+    // USB from dmesg 
     char kernel_buffer[100];
+    char usb_name[13] = "/dev/ttyUSBX\0";
+    int i = 8, j =5;
+
     // wrapper funciton of kernel funciton printk 
     // 2 - waits for new kernel messages, requires root privileges 
     // 3 - reads old kernel messages, does not require root privileges
-    printf("Printing kernel message\n");
     klogctl(3,kernel_buffer, sizeof(kernel_buffer));
-    printf("%s\n", kernel_buffer);
+
+    for(i; i>0;i--){
+        usb_name[j++] = kernel_buffer[strlen(kernel_buffer)-i];
+    }
+    usb_name[j] = '\0';
+    printf("Detected:      %s",usb_name);
+
+    if(!strcmp(usbport,usb_name))
+        printf("Ports matching!\n");
+
+
+    
+
+
+
+
+
+
+
+
+
+
 
 
     // variables for internet socket  
@@ -132,7 +159,7 @@ int main(int argc, char *argv[])
 
      /****************** Establishing serial connection  *********************************/
 
-    char usbport[] = "/dev/ttyUSB1";
+    
     printf("\n");
     printf("Opening serial port on %s\n", usbport);
 
