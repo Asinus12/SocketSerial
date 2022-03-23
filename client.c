@@ -66,7 +66,28 @@ int main(int argc, char *argv[])
     else 
         printf("Connected to server\n");
 
+    /***** SELECT manual or automated mode********/
+    printf("Enter 1 for manual mode or 2 for automated mode ");
 
+    char modesel = getchar(); 
+    printf("%c\n", modesel);
+
+    char str[126];
+    if (modesel == '1'){
+        n = write(sockfd,"manual\0",8);
+        while(strcmp(str,"exit")){
+            scanf("%126s",str);
+            n = write(sockfd,str,sizeof(str));
+        }
+        return 1; 
+
+    }
+        
+    else if (modesel == '2')
+        n = write(sockfd,"automated\0",11);
+
+    if (n < 0) 
+         error("ERROR writing to socket");
 
     /**************** PARSE TEXT FILE  ****************************/ 
 

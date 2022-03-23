@@ -47,18 +47,6 @@ int main(int argc, char *argv[])
         printf("Ports matching!\n");
 
 
-    
-
-
-
-
-
-
-
-
-
-
-
 
     // variables for internet socket  
     int sockfd, newsockfd, portno;
@@ -103,12 +91,38 @@ int main(int argc, char *argv[])
                 
     if (newsockfd < 0) 
         error("ERROR on accept");
-    
+    else 
+        printf("Client connected\n");    
 
     /******************* IPv4 socket connection established *************************/
 
 
     char mybuffer[256];
+
+    
+    /******** get mode, maunual or automated **************/ 
+    myn = read(newsockfd,mybuffer,256);
+    if (myn < 0) error("ERROR reading from socket");
+    printf("selected mode is %s\n ", mybuffer);
+
+    if(!strcmp(mybuffer,"manual")){
+
+        while (strcmp(mybuffer, "exit"))
+        {
+           myn = read(newsockfd,mybuffer,256);
+           if (myn < 0) error("ERROR reading from socket");
+            printf("%s\n", mybuffer);
+
+        }
+        return 1;
+        
+    }
+    
+
+
+
+
+
     
     //  receive num of commands
     bzero(mybuffer,256);
